@@ -1,0 +1,116 @@
+<h1>Scala eye for the Java guy</h1>
+<p>So you are thinking about using Scala. But you realise that the small projects you've written are far too simple to give you the experience to move all your Java code to Scala. This article is a guide to bringing Scala to your Java (specifically, <a href="http://www.springframework.org">Spring Framework</a>-based) projects.</p>
+<p>Unlike the other guides you may find on the Interwebs, I will not go into detail of the syntax of Scala, nor explain in depth any of its functional features. Instead, I will take a look at combining Java and Scala in one project, seeing how the two languages work together in Maven and configuring your IDE to simplify your development.</p>
+<h3>Seeing is believing</h3>
+<p>If you do not feel like reading paragraph after paragraph of text and want to jump straight into writing some code, watch &amp; follow the video, which will show you how to configure your development environment for a multi-language project.<br /> <em>**VIDEO HERE**</em></p>
+<h3>Maven setup</h3>
+<p>Unusually, I will begin by showing you how to configure Maven even before writing a single line of Scala code: Hello, World example may be inspirational, but we are adding Scala to existing (and complex) Java application.</p>
+<p>To build our polyglot application, we need to add the Scala Maven plugin that will configure the Scala compiler to run during the compile phase.</p>
+<p class="code-caption">Listing 1. Scala Maven plugins</p>
+<pre class="brush:[java]">&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd"&gt;
+
+  &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+  &lt;groupId&gt;...&lt;/groupId&gt;
+  &lt;artifactId&gt;...&lt;/artifactId&gt;
+  &lt;version&gt;...&lt;/version&gt;
+
+  &lt;dependencies&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;org.scala-lang&lt;/groupId&gt;
+      &lt;artifactId&gt;scala-library&lt;/artifactId&gt;
+      &lt;version&gt;2.9.1&lt;/version&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;
+
+  &lt;build&gt;
+    &lt;pluginManagement&gt;
+      &lt;plugins&gt;
+        &lt;plugin&gt;
+          &lt;groupId&gt;org.scala-tools&lt;/groupId&gt;
+          &lt;artifactId&gt;maven-scala-plugin&lt;/artifactId&gt;
+          &lt;version&gt;2.15.3-SNAPSHOT&lt;/version&gt;
+        &lt;/plugin&gt;
+      &lt;/plugins&gt;
+    &lt;/pluginManagement&gt;
+    &lt;plugins&gt;
+      &lt;plugin&gt;
+        &lt;groupId&gt;org.scala-tools&lt;/groupId&gt;
+        &lt;artifactId&gt;maven-scala-plugin&lt;/artifactId&gt;
+        &lt;executions&gt;
+          &lt;execution&gt;
+            &lt;goals&gt;
+              &lt;goal&gt;compile&lt;/goal&gt;
+              &lt;goal&gt;testCompile&lt;/goal&gt;
+            &lt;/goals&gt;
+          &lt;/execution&gt;
+        &lt;/executions&gt;
+      &lt;/plugin&gt;
+    &lt;/plugins&gt;
+  &lt;/build&gt;
+
+  &lt;reporting&gt;
+    &lt;plugins&gt;
+      &lt;plugin&gt;
+        &lt;groupId&gt;org.scala-tools&lt;/groupId&gt;
+        &lt;artifactId&gt;maven-scala-plugin&lt;/artifactId&gt;
+        &lt;version&gt;2.15.3-SNAPSHOT&lt;/version&gt;
+      &lt;/plugin&gt;
+    &lt;/plugins&gt;
+  &lt;/reporting&gt;
+
+&lt;/project&gt;
+</pre>
+<p>The most important elements here is the org.scala-tools:maven-scala-plugin plugin that we refer to in the build and reporting configuration of our project. The plugin tells Maven to perform, in addition to the usual Java compilation, the Scala compilation. (Notice	the &lt;goal&gt;compile&lt;/goal&gt; and &lt;goal&gt;testCompile&lt;/goal&gt;
+goals.)<br /> If you include this configuration in your [parent] pom.xml file, then all you have to do is to write the necessary Scala code in src/main/scala and src/test/scala.<br /> Moving on, let's configure your IDE to give you some coding assistance with your Scala code.</p>
+<h3>IDE Setup</h3>
+<p>The code is just a few minutes' reading away, but we need to configure our IDEs to allow us to write the fancy Scala code efficiently. If you are using <a href="http://www.jetbrains.com/idea">IntelliJ IDEA</a>, then all you need to do is to download the Scala plugin (viz Figure 1).</p>
+<p class="figurecaption">Figure 1. IntelliJ IDEA Scala plugin</p>
+<p><img src="http://cakesolutions.org/static/videos/1-scalaeye/plugin.png" border="0" /></p>
+<p>Once you have the Scala plugin installed, you can open or import the project using IntelliJ IDEA's Maven support. Once imported, the project settings will include the Scala facet (referencing the Scala compiler defined in the project's pom.xml).</p>
+<p>We're now ready to start writing some Scala code!</p>
+<h3>Java-like Scala</h3>
+<p>Now you're ready to start include some Scala code in your application. To get you started, let's mechanically translate a Java Spring-based service into Scala. We will start with Listing 2, which shows the Java source:</p>
+<p class="codecaption">Listing 2. Java source</p>
+<pre class="brush:[java]">@Service
+public class Service {
+	private final Repository repository;
+	
+	@Autowired
+	public Service(Repository repository) {
+		if (repository == null) 
+			throw new IllegalArgumentException("The 'repository' cannot be null.");
+		this.repository = repository;
+	}
+	
+	@Transactional(readOnly = true)
+	public Entity getEntityById(Long id) {
+		return this.repository.getEntityById(id);
+	}
+	
+	@Transactional
+	public void save(Object entity) {
+		this.repository.save(entity);
+	}
+}
+	</pre>
+<p>I am using the <em>infamous</em> names like Service and Repository, which represent the typical code in a tiered Java application. The equivalent Scala code is in Listing 3.</p>
+<p>&nbsp;</p>
+<p class="codecaption">Listing 3. Scala source</p>
+<pre class="brush:[java]">@Service
+class EntityService @Autowired() (private val repository: Repository) {
+  require(repository != null)
+
+  @Transactional(readOnly = true)
+  def getEntityById(id: Long) = repository.getEntityById(id)
+
+  @Transactional
+  def save(entity: AnyRef) {
+    repository.save(entity)
+  }
+}
+	</pre>
+<p>As you can see, the Scala code is more concise and it performs <em>exactly</em> the same functions as the Java code in Listing 3. Moreover, it uses the Repository object that is implemented in pure Java and&mdash;assuming you have appropriately configured Spring ApplicationContext&mdash;it will become a regular Spring bean and have the Repository bean supplied as the value to its constructor.</p>
+<p>As you can see, using Scala in your existing [Spring] Java applications is trivial, it does not unnecessarily complicate the build process, and you can <em>ease your way</em> into the Scala language&mdash;by ease your way I mean start writing standard object-oriented code in Scala and slowly, as you gain more confidence, start including Scala's functional features.</p>
+<p>To get your functional inspiration, take a look at our <a href="http://www.cakesolutions.org/specs2-spring.html">Specs2 Spring</a> project and start writing	unit, integration and acceptance specifications for your application in now fully functional Scala!</p>
